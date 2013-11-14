@@ -23,5 +23,13 @@ pip install -q tox
 # Run registry tests
 tox || exit 1
 python -m unittest discover -p s3.py -s test || exit 1
-python -m unittest discover -p workflow.py -s test
+python -m unittest discover -p workflow.py -s test; exit_status=$?
 
+rest_url='http://docker-ci-report.dotcloud.com:8080/admin/api/v1/services/registry/events'
+if [ $exit_status -eq 0 ]; then
+    curl -d message="Registry tests succeeded" -d status=up $rest_url
+else
+    curl -d message="Registry tests failed" -d status=down $rest_url
+fi
+
+exit $exit_status
