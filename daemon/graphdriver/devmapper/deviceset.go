@@ -43,7 +43,7 @@ var (
 	// We retry device removal so many a times that even error messages
 	// will fill up console during normal operation. So only log Fatal
 	// messages by default.
-	logLevel                            = devicemapper.LogLevelFatal
+	logLevel                            = devicemapper.LogLevelDebug
 	driverDeferredRemovalSupport        = false
 	enableDeferredRemoval               = false
 	enableDeferredDeletion              = false
@@ -1278,9 +1278,9 @@ func (devices *DeviceSet) DMLog(level int, file string, line int, dmError int, m
 	// By default libdm sends us all the messages including debug ones.
 	// We need to filter out messages here and figure out which one
 	// should be printed.
-	if level > logLevel {
-		return
-	}
+	//if level > logLevel {
+	//	return
+	//}
 
 	// FIXME(vbatts) push this back into ./pkg/devicemapper/
 	if level <= devicemapper.LogLevelErr {
