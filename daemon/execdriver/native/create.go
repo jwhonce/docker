@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/daemon/execdriver"
 	"github.com/docker/docker/daemon/execdriver/dockerhooks"
 	derr "github.com/docker/docker/errors"
@@ -22,31 +24,45 @@ import (
 // createContainer populates and configures the container type with the
 // data provided by the execdriver.Command
 func (d *Driver) createContainer(c *execdriver.Command, hooks execdriver.Hooks) (container *configs.Config, err error) {
+	ts := time.Now()
 	container = execdriver.InitContainer(c)
+	logrus.Infof("LATENCY Handled InitContainer for container %v in %v (execdriver/native/create.go)", c.ID, time.Since(ts))
 
+	ts = time.Now()
 	if err := d.createIpc(container, c); err != nil {
 		return nil, err
 	}
+	logrus.Infof("LATENCY Handled createIPC for container %v in %v", c.ID, time.Since(ts))
 
+	ts = time.Now()
 	if err := d.createPid(container, c); err != nil {
 		return nil, err
 	}
+	logrus.Infof("LATENCY Handled createPid for container %v in %v", c.ID, time.Since(ts))
 
+	ts = time.Now()
 	if err := d.createUTS(container, c); err != nil {
 		return nil, err
 	}
+	logrus.Infof("LATENCY Handled createUTS for container %v in %v", c.ID, time.Since(ts))
 
+	ts = time.Now()
 	if err := d.setupRemappedRoot(container, c); err != nil {
 		return nil, err
 	}
+	logrus.Infof("LATENCY Handled setupRemappedRoot for container %v in %v", c.ID, time.Since(ts))
 
+	ts = time.Now()
 	if err := d.setupHooks(container, c); err != nil {
 		return nil, err
 	}
+	logrus.Infof("LATENCY Handled setupHooks for container %v in %v", c.ID, time.Since(ts))
 
+	ts = time.Now()
 	if err := d.createNetwork(container, c, hooks); err != nil {
 		return nil, err
 	}
+	logrus.Infof("LATENCY Handled createNetwork for container %v in %v", c.ID, time.Since(ts))
 
 	if c.ProcessConfig.Privileged {
 		if !container.Readonlyfs {

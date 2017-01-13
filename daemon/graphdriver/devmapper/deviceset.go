@@ -2241,6 +2241,9 @@ func (devices *DeviceSet) Shutdown() error {
 
 // MountDevice mounts the device if not already mounted.
 func (devices *DeviceSet) MountDevice(hash, path, mountLabel string) error {
+	logrus.Infof("LATENCY in (daemon/graphdriver/devmapper/deviceset.go) enter for %v", path)
+
+	ts := time.Now()
 	info, err := devices.lookupDeviceWithLock(hash)
 	if err != nil {
 		return err
@@ -2268,11 +2271,14 @@ func (devices *DeviceSet) MountDevice(hash, path, mountLabel string) error {
 	if err := devices.activateDeviceIfNeeded(info, false); err != nil {
 		return fmt.Errorf("devmapper: Error activating devmapper device for '%s': %s", hash, err)
 	}
+	logrus.Infof("LATENCY in (daemon/graphdriver/devmapper/deviceset.go) activateDeviceIfNeeded for %v in %v", path, time.Since(ts))
 
+	ts = time.Now()
 	fstype, err := ProbeFsType(info.DevName())
 	if err != nil {
 		return err
 	}
+	logrus.Infof("LATENCY in (daemon/graphdriver/devmapper/deviceset.go) ProbeFsType for %v in %v", path, time.Since(ts))
 
 	options := ""
 
@@ -2284,6 +2290,7 @@ func (devices *DeviceSet) MountDevice(hash, path, mountLabel string) error {
 	options = joinMountOptions(options, devices.mountOptions)
 	options = joinMountOptions(options, label.FormatMountLabel("", mountLabel))
 
+	ts = time.Now()
 	if err := mount.Mount(info.DevName(), path, fstype, options); err != nil {
 		return fmt.Errorf("devmapper: Error mounting '%s' on '%s': %s", info.DevName(), path, err)
 	}
@@ -2291,6 +2298,7 @@ func (devices *DeviceSet) MountDevice(hash, path, mountLabel string) error {
 	info.mountCount = 1
 	info.mountPath = path
 
+	logrus.Infof("LATENCY out (daemon/graphdriver/devmapper/deviceset.go) Mount for %v in %v", path, time.Since(ts))
 	return nil
 }
 

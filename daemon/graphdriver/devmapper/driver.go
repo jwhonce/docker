@@ -16,6 +16,7 @@ import (
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/mount"
 	"github.com/docker/go-units"
+	"time"
 )
 
 func init() {
@@ -152,6 +153,7 @@ func (d *Driver) Remove(id string) error {
 func (d *Driver) Get(id, mountLabel string) (string, error) {
 	mp := path.Join(d.home, "mnt", id)
 
+	ts := time.Now()
 	uid, gid, err := idtools.GetRootUIDGID(d.uidMaps, d.gidMaps)
 	if err != nil {
 		return "", err
@@ -164,11 +166,14 @@ func (d *Driver) Get(id, mountLabel string) (string, error) {
 		return "", err
 	}
 
+	ts = time.Now()
 	// Mount the device
 	if err := d.DeviceSet.MountDevice(id, mp, mountLabel); err != nil {
 		return "", err
 	}
+	logrus.Infof("LATENCY in (daemon/graphdriver/devmapper/driver.go#Get) MountDevice for %v in %v", id, time.Since(ts))
 
+	ts = time.Now()
 	rootFs := path.Join(mp, "rootfs")
 	if err := idtools.MkdirAllAs(rootFs, 0755, uid, gid); err != nil && !os.IsExist(err) {
 		d.DeviceSet.UnmountDevice(id, mp)
@@ -185,6 +190,7 @@ func (d *Driver) Get(id, mountLabel string) (string, error) {
 		}
 	}
 
+	logrus.Infof("LATENCY out (daemon/graphdriver/devmapper/driver.go#Get) for %v in %v", id, time.Since(ts))
 	return rootFs, nil
 }
 

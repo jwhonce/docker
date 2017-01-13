@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/pkg/stringid"
 	"github.com/vbatts/tar-split/tar/asm"
 	"github.com/vbatts/tar-split/tar/storage"
+	"time"
 )
 
 // maxLayerDepth represents the maximum number of
@@ -454,20 +455,27 @@ func (ls *layerStore) CreateRWLayer(name string, parent ChainID, mountLabel stri
 	}
 
 	if initFunc != nil {
+		ts := time.Now()
 		pid, err = ls.initMount(m.mountID, pid, mountLabel, initFunc)
+		logrus.Infof("LATENCY in (layer/layer_store.go#CreateRWLayer) initMount for %v in %v", m.mountID, time.Since(ts))
+
 		if err != nil {
 			return nil, err
 		}
 		m.initID = pid
 	}
 
+	ts := time.Now()
 	if err = ls.driver.Create(m.mountID, pid, ""); err != nil {
 		return nil, err
 	}
+	logrus.Infof("LATENCY in (layer/layer_store.go#CreateRWLayer) Create for %v in %v", m.mountID, time.Since(ts))
 
+	ts = time.Now()
 	if err = ls.saveMount(m); err != nil {
 		return nil, err
 	}
+	logrus.Infof("LATENCY in (layer/layer_store.go#saveMount) Create for %v in %v", m.mountID, time.Since(ts))
 
 	return m.getReference(), nil
 }
@@ -559,22 +567,31 @@ func (ls *layerStore) initMount(graphID, parent, mountLabel string, initFunc Mou
 	// then the initID should be randomly generated.
 	initID := fmt.Sprintf("%s-init", graphID)
 
+	ts := time.Now()
 	if err := ls.driver.Create(initID, parent, mountLabel); err != nil {
 		return "", err
 	}
+	logrus.Infof("LATENCY in (layer/layer_store.go#initMount) Create for %v in %v", graphID, time.Since(ts))
+
+	ts = time.Now()
 	p, err := ls.driver.Get(initID, "")
 	if err != nil {
 		return "", err
 	}
+	logrus.Infof("LATENCY in (layer/layer_store.go#initMount) Get for %v in %v", graphID, time.Since(ts))
 
+	ts = time.Now()
 	if err := initFunc(p); err != nil {
 		ls.driver.Put(initID)
 		return "", err
 	}
+	logrus.Infof("LATENCY in (layer/layer_store.go#initMount) initFunc for %v in %v", graphID, time.Since(ts))
 
+	ts = time.Now()
 	if err := ls.driver.Put(initID); err != nil {
 		return "", err
 	}
+	logrus.Infof("LATENCY out (layer/layer_store.go#initMount) Put for %v in %v", graphID, time.Since(ts))
 
 	return initID, nil
 }
