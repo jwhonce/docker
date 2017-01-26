@@ -16,6 +16,7 @@ import (
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/mount"
 	"github.com/docker/go-units"
+	"time"
 )
 
 func init() {
@@ -159,6 +160,10 @@ func (d *Driver) Remove(id string) error {
 
 // Get mounts a device with given id into the root filesystem
 func (d *Driver) Get(id, mountLabel string) (string, error) {
+	logrus.Infof("LATENCY enter (daemon/graphdriver/devmapper/driver.go#Get) for %v", id)
+
+	ts := time.Now()
+
 	mp := path.Join(d.home, "mnt", id)
 	rootFs := path.Join(mp, "rootfs")
 	if count := d.ctr.Increment(mp); count > 1 {
@@ -186,7 +191,9 @@ func (d *Driver) Get(id, mountLabel string) (string, error) {
 		d.ctr.Decrement(mp)
 		return "", err
 	}
+	logrus.Infof("LATENCY in (daemon/graphdriver/devmapper/driver.go#Get) MountDevice for %v in %v", id, time.Since(ts))
 
+	ts = time.Now()
 	if err := idtools.MkdirAllAs(rootFs, 0755, uid, gid); err != nil && !os.IsExist(err) {
 		d.ctr.Decrement(mp)
 		d.DeviceSet.UnmountDevice(id, mp)
@@ -203,6 +210,7 @@ func (d *Driver) Get(id, mountLabel string) (string, error) {
 			return "", err
 		}
 	}
+	logrus.Infof("LATENCY out (daemon/graphdriver/devmapper/driver.go#Get) Stat for %v in %v", id, time.Since(ts))
 
 	return rootFs, nil
 }

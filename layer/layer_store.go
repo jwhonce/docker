@@ -16,6 +16,7 @@ import (
 	"github.com/docker/docker/pkg/stringid"
 	"github.com/vbatts/tar-split/tar/asm"
 	"github.com/vbatts/tar-split/tar/storage"
+	"time"
 )
 
 // maxLayerDepth represents the maximum number of
@@ -430,8 +431,14 @@ func (ls *layerStore) Release(l Layer) ([]Metadata, error) {
 }
 
 func (ls *layerStore) CreateRWLayer(name string, parent ChainID, mountLabel string, initFunc MountInit, storageOpt map[string]string) (RWLayer, error) {
+	logrus.Infof("LATENCY enter (layer/layer_store.go#CreateRWLayer) for %v", name)
+	 ts := time.Now()
+
 	ls.mountL.Lock()
 	defer ls.mountL.Unlock()
+	logrus.Infof("LATENCY in (layer/layer_store.go#CreateRWLayer) unlock for %v in %v", name, time.Since(ts))
+	ts = time.Now()
+	
 	m, ok := ls.mounts[name]
 	if ok {
 		return nil, ErrMountNameConflict
@@ -480,6 +487,7 @@ func (ls *layerStore) CreateRWLayer(name string, parent ChainID, mountLabel stri
 	if err = ls.saveMount(m); err != nil {
 		return nil, err
 	}
+	logrus.Infof("LATENCY out (layer/layer_store.go#CreateRWLayer) for %v in %v", name, time.Since(ts))
 
 	return m.getReference(), nil
 }

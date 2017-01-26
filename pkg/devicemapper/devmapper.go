@@ -272,8 +272,24 @@ var dmLogger DevmapperLogger
 
 // LogInit initializes the logger for the device mapper library.
 func LogInit(logger DevmapperLogger) {
+	logrus.Infof("devicemapper: LogInit level %v", logrus.GetLevel().String())
 	dmLogger = logger
 	LogWithErrnoInit()
+	switch logrus.GetLevel() {
+	case logrus.PanicLevel:
+		LogInitVerbose(LogLevelFatal)
+	case logrus.FatalLevel:
+		LogInitVerbose(LogLevelErr)
+	case logrus.ErrorLevel:
+		LogInitVerbose(LogLevelWarn)
+	case logrus.WarnLevel:
+		LogInitVerbose(LogLevelNotice)
+	case logrus.InfoLevel:
+		LogInitVerbose(LogLevelInfo)
+	case logrus.DebugLevel:
+		LogInitVerbose(LogLevelDebug)
+	}
+	LogInitVerbose(LogLevelDebug)
 }
 
 // SetDevDir sets the dev folder for the device mapper library (usually /dev).

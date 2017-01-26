@@ -17,6 +17,7 @@ import (
 	containertypes "github.com/docker/engine-api/types/container"
 	networktypes "github.com/docker/engine-api/types/network"
 	"github.com/opencontainers/runc/libcontainer/label"
+	"time"
 )
 
 // CreateManagedContainer creates a container that is managed by a Service
@@ -62,6 +63,8 @@ func (daemon *Daemon) containerCreate(params types.ContainerCreateConfig, manage
 
 // Create creates a new container from the given configuration with a given name.
 func (daemon *Daemon) create(params types.ContainerCreateConfig, managed bool) (retC *container.Container, retErr error) {
+	logrus.Infof("LATENCY enter (daemon/create.go#create) for %v", params.Name)
+	ts := time.Now()
 	var (
 		container *container.Container
 		img       *image.Image
@@ -84,7 +87,9 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig, managed bool) (
 	if err := daemon.mergeAndVerifyLogConfig(&params.HostConfig.LogConfig); err != nil {
 		return nil, err
 	}
+	logrus.Infof("LATENCY in (daemon/create.go#create) mergeAndVerifyLogConfig for %v in %v", params.Name, time.Since(ts))
 
+	ts = time.Now()
 	if container, err = daemon.newContainer(params.Name, params.Config, imgID, managed); err != nil {
 		return nil, err
 	}
@@ -95,7 +100,9 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig, managed bool) (
 			}
 		}
 	}()
+	logrus.Infof("LATENCY in (daemon/create.go#create) newContainer for %v in %v", params.Name, time.Since(ts))
 
+	ts = time.Now()
 	if err := daemon.setSecurityOptions(container, params.HostConfig); err != nil {
 		return nil, err
 	}
@@ -106,7 +113,9 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig, managed bool) (
 	if err := daemon.setRWLayer(container); err != nil {
 		return nil, err
 	}
+	logrus.Infof("LATENCY in (daemon/create.go#create) setRWLayer for %v in %v", params.Name, time.Since(ts))
 
+	ts = time.Now()
 	rootUID, rootGID, err := idtools.GetRootUIDGID(daemon.uidMaps, daemon.gidMaps)
 	if err != nil {
 		return nil, err
@@ -150,6 +159,8 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig, managed bool) (
 		return nil, err
 	}
 	daemon.LogContainerEvent(container, "create")
+	logrus.Infof("LATENCY out (daemon/create.go#create) for %v in %v", params.Name, time.Since(ts))
+
 	return container, nil
 }
 
@@ -206,6 +217,8 @@ func (daemon *Daemon) generateSecurityOpt(hostConfig *containertypes.HostConfig)
 }
 
 func (daemon *Daemon) setRWLayer(container *container.Container) error {
+	logrus.Infof("LATENCY enter (daemon/create.go#setRWLayer) for %v", container.Name)
+	ts := time.Now()
 	var layerID layer.ChainID
 	if container.ImageID != "" {
 		img, err := daemon.imageStore.Get(container.ImageID)
@@ -213,12 +226,15 @@ func (daemon *Daemon) setRWLayer(container *container.Container) error {
 			return err
 		}
 		layerID = img.RootFS.ChainID()
+		logrus.Infof("LATENCY in (daemon/create.go#setRWLayer) daemon.imageStore.Get for %v in %v", container.Name, time.Since(ts))
+		ts = time.Now()
 	}
 	rwLayer, err := daemon.layerStore.CreateRWLayer(container.ID, layerID, container.MountLabel, daemon.setupInitLayer, container.HostConfig.StorageOpt)
 	if err != nil {
 		return err
 	}
 	container.RWLayer = rwLayer
+	logrus.Infof("LATENCY out (daemon/create.go#setRWLayer) daemon.layerStore.CreateRWLayer for %v in %v", container.Name, time.Since(ts))
 
 	return nil
 }
