@@ -1282,16 +1282,7 @@ func (devices *DeviceSet) DMLog(level int, file string, line int, dmError int, m
 	if level > logLevel {
 		return
 	}
-
-	// FIXME(vbatts) push this back into ./pkg/devicemapper/
-	if level <= devicemapper.LogLevelErr {
-		logrus.Errorf("libdevmapper(%d): %s:%d (%d) %s", level, file, line, dmError, message)
-	} else if level <= devicemapper.LogLevelInfo {
-		logrus.Infof("libdevmapper(%d): %s:%d (%d) %s", level, file, line, dmError, message)
-	} else {
-		// FIXME(vbatts) push this back into ./pkg/devicemapper/
-		logrus.Debugf("libdevmapper(%d): %s:%d (%d) %s", level, file, line, dmError, message)
-	}
+	devicemapper.Logf(level, file, line, dmError, message)
 }
 
 func major(device uint64) uint64 {
@@ -2712,6 +2703,12 @@ func NewDeviceSet(root string, doInit bool, options []string, uidMaps, gidMaps [
 				return nil, err
 			}
 			devices.xfsNospaceRetries = val
+		case "dm.log_level":
+			l, err := devicemapper.ParseLevel(val)
+			if err != nil {
+				return nil, fmt.Errorf("devmapper: Invalid value %v for option dm.log_level", val)
+			}
+			logLevel = l
 		default:
 			return nil, fmt.Errorf("devmapper: Unknown option %s\n", key)
 		}

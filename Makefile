@@ -1,4 +1,4 @@
-.PHONY: all binary build build-gccgo cross default docs docs-build docs-shell shell gccgo test test-docker-py test-integration-cli test-unit validate help
+.PHONY: all binary build build-gccgo default docs docs-build docs-shell shell gccgo test test-docker-py test-integration-cli test-unit validate help
 
 # set the graph driver as the current graphdriver if not set
 DOCKER_GRAPHDRIVER := $(if $(DOCKER_GRAPHDRIVER),$(DOCKER_GRAPHDRIVER),$(shell docker info 2>&1 | grep "Storage Driver" | sed 's/.*: //'))
@@ -73,14 +73,11 @@ build-gccgo: bundles
 bundles:
 	mkdir bundles
 
-cross: build ## cross build the binaries for darwin, freebsd and\nwindows
-	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary binary cross
-
 win: build ## cross build the binary for windows
 	$(DOCKER_RUN_DOCKER) hack/make.sh win
 
 tgz: build ## build the archives (.zip on windows and .tgz\notherwise) containing the binaries
-	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary binary cross tgz
+	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary binary tgz
 
 deb: build  ## build the deb packages
 	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary build-deb

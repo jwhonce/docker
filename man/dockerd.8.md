@@ -570,6 +570,22 @@ Example use:
     $ sudo dockerd --storage-opt dm.xfs_nospace_max_retries=0
 
 
+#### dm.log_level
+
+Specifies the log entries from devicemapper that should be forwarded to
+the configured daemon logger. This implies that the devicemapper logging
+level should be at least as great as the daemon's.  Valid levels follow
+the libdevmapper API and are: `fatal`, `error`|`err`, `warning`|`warn`,
+`notice`, `info` and `debug`.  `notice` and `info` are both mapped to
+the logrus level of `info`. The default level is `fatal`.
+
+Note: Be warned increasing the level of logging will impact performance.
+This impact is why a separate configuration option is provided.
+
+Example use:
+
+    $ sudo dockerd -D --storage-opt dm.log_level=debug
+
 ## ZFS options
 
 #### zfs.fsname
